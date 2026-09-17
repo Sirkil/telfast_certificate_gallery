@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telfast GAC - Live Showcase Gallery</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      /* Only the background image is visible, no dark overlays or tints */
+      background-color: #0f0518;
+      background-image: url('background.jpg');
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: default;
+    }
+
+    /* Centered display stage */
+    .stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Certificate Slide Container: Dead center */
+    .cert-slide {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transform: scale(0.96);
+      transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 1.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  visibility 1.2s;
+      pointer-events: none;
+    }
+
+    /* Active visible slide */
+    .cert-slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: scale(1);
+      z-index: 5;
+    }
+
+    /* Fade-in for 1st submission (and still) */
+    .cert-slide.fade-in-still {
+      animation: fadeInStill 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fadeInStill {
+      0% {
+        opacity: 0;
+        transform: scale(0.92);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* Fade-in for new submission arrival */
+    .cert-slide.new-arrival-in {
+      animation: newArrivalIn 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes newArrivalIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.90);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* Smooth fade-out transition */
+    .cert-slide.fade-out {
+      opacity: 0;
+      transform: scale(0.96);
+      transition: opacity 1.1s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Certificate Image: Responsive, 1500:1167 ratio preserved, centered */
+    .cert-image {
+      max-width: 90vw;
+      max-height: 90vh;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      aspect-ratio: 1500 / 1167;
+      border-radius: 12px;
+      box-shadow: 
+        0 30px 80px rgba(0, 0, 0, 0.75),
+        0 0 50px rgba(103, 53, 132, 0.32);
+    }
+  </style>
+</head>
+<body>
+  <!-- Pure Centered Showcase Stage: ONLY Background & Certificate Image -->
+  <div class="stage" id="stage"></div>
+
+  <!-- Fallback static data if opened offline / file protocol -->
+  <script src="gallery_data.js"></script>
+
+  <script>
+    /**
+     * =========================================================================
+     * TELFAST GAC - AUTOMATIC CERTIFICATE CAROUSEL (ZERO-UI CINEMATIC STAGE)
+     * =========================================================================
+     * - Only background.jpg is shown
+     * - Certificate image is centered in screen
+     * - 1st submission: Fades in and stays still
+     * - 2+ submissions: New submission fades in, then automatic carousel loops
+     * - Browser Cache API + memory preloading for 0ms transitions
+     * =========================================================================
+     */
+
+    // Google Sheets Logger Script URLs (checks primary and fallback)
+    const SHEET_URLS = [
+      'https://script.google.com/macros/s/AKfycbzgIVp72CexxQYMDm2dFqzOEJ2TAiIbU6aKiLCnRhfghFDYqRZxRMGkVcMgghOO-sAT/exec',
+      'https://script.google.com/macros/s/AKfycbyJ2Bbgju4GSU0-nszESg-wAFClNN1N0YfCsYJDZYBDsqLVorms9f1Q4KSL4otXwpc/exec'
+    ];
+
+    const LOCAL_SSE_URL = 'http://localhost:8765/events';
+    const CACHE_NAME = 'telfast-cert-cache-v2';
+    const CAROUSEL_INTERVAL_MS = 5000;    // 5 seconds per certificate slide
+    const NEW_SUBMISSION_PAUSE_MS = 6500; // 6.5s display time for new arrivals
+
+    let certificates = [];
+    let currentIndex = 0;
+    let carouselTimer = null;
+    let pollTimer = null;
+    let isSingleCertMode = false;
+    const blobUrlMap = new Map(); // In-memory cached Object URLs
+
+    const stage = document.getElementById('stage');
+
+    /**
+     * Convert Google Drive view URL to high-resolution direct image link
+     * Uses Google's fast CDN (lh3.googleusercontent.com/d/ID=w1600)
+     */
+    function extractDirectDriveImageUrl(url) {
+      if (!url) return '';
+      if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+      if (url.includes('lh3.googleusercontent.com') || url.includes('thumbnail?id=')) return url;
+
+      const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        return `https://lh3.googleusercontent.com/d/${match[1]}=w1600`;
+      }
+      return url;
+    }
+
+    /**
+     * Browser Cache API & Memory Preloader:
+     * Caches image Blobs permanently in browser storage for instant 0ms switching
+     */
+    async function getCachedImageUrl(rawUrl) {
+      const directUrl = extractDirectDriveImageUrl(rawUrl);
+      if (!directUrl) return '';
+
+      // 1. In-memory cache check
+      if (blobUrlMap.has(directUrl)) {
+        return blobUrlMap.get(directUrl);
+      }
+
+      // 2. Cache API check
+      if ('caches' in window) {
+        try {
+          const cache = await caches.open(CACHE_NAME);
+          const cached = await cache.match(directUrl);
+          if (cached) {
+            const blob = await cached.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            blobUrlMap.set(directUrl, blobUrl);
+            return blobUrl;
+          }
+
+          // Fetch & store in Cache
+          const resp = await fetch(directUrl, { mode: 'cors' }).catch(() => null);
+          if (resp && resp.ok) {
+            await cache.put(directUrl, resp.clone());
+            const blob = await resp.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            blobUrlMap.set(directUrl, blobUrl);
+            return blobUrl;
+          }
+        } catch (err) {
+          // Silent fallback to directUrl
+        }
+      }
+
+      return directUrl;
+    }
+
+    /**
+     * Preload next image into browser GPU cache
+     */
+    function preloadImage(url) {
+      if (!url) return;
+      const img = new Image();
+      img.src = url;
+    }
+
+    /**
+     * Render slides into stage
+     */
+    async function renderSlides(isNewArrival = false) {
+      if (!certificates || certificates.length === 0) {
+        stage.innerHTML = '';
+        return;
+      }
+
+      stage.innerHTML = '';
+      isSingleCertMode = certificates.length === 1;
+
+      for (let i = 0; i < certificates.length; i++) {
+        const item = certificates[i];
+        const slide = document.createElement('div');
+        slide.className = `cert-slide ${i === currentIndex ? 'active' : ''}`;
+        slide.id = `slide-${i}`;
+
+        const img = document.createElement('img');
+        img.className = 'cert-image';
+        img.alt = item.name ? `Certificate for ${item.name}` : 'Certificate';
+
+        // Load image from Cache API or direct URL
+        const resolvedUrl = await getCachedImageUrl(item.driveUrl || item.localImagePath);
+        img.src = resolvedUrl || 'background.jpg';
+
+        // Robust CDN fallback if primary URL encounters issues
+        img.onerror = () => {
+          const match = (item.driveUrl || '').match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || (item.driveUrl || '').match(/id=([a-zA-Z0-9_-]+)/);
+          if (match && match[1] && !img.dataset.triedFallback) {
+            img.dataset.triedFallback = '1';
+            img.src = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1600`;
+          } else if (item.qrCodeUrl) {
+            img.src = item.qrCodeUrl;
+          }
+        };
+
+        slide.appendChild(img);
+        stage.appendChild(slide);
+
+        // Preload upcoming images
+        preloadImage(resolvedUrl);
+      }
+
+      // Case 1: First submission (1 certificate total) -> Fade in and remain still
+      if (isSingleCertMode) {
+        const firstSlide = document.getElementById('slide-0');
+        if (firstSlide) {
+          firstSlide.classList.add('fade-in-still');
+        }
+        stopCarousel();
+        return;
+      }
+
+      // Case 2: New arrival in multi-certificate set
+      if (isNewArrival) {
+        const arrivalSlide = document.getElementById(`slide-${currentIndex}`);
+        if (arrivalSlide) {
+          arrivalSlide.classList.add('new-arrival-in');
+        }
+      }
+
+      // Case 3: 2 or more certificates -> Start automatic endless carousel
+      startCarousel();
+    }
+
+    /**
+     * Smoothly cross-fade to slide at targetIdx
+     */
+    function goToSlide(targetIdx) {
+      if (certificates.length <= 1) return;
+
+      const currentSlide = document.getElementById(`slide-${currentIndex}`);
+      const nextSlide = document.getElementById(`slide-${targetIdx}`);
+
+      if (currentSlide) {
+        currentSlide.className = 'cert-slide fade-out';
+      }
+
+      if (nextSlide) {
+        nextSlide.className = 'cert-slide active';
+      }
+
+      currentIndex = targetIdx;
+
+      // Preload next certificate ahead of time
+      const nextNextIdx = (currentIndex + 1) % certificates.length;
+      if (certificates[nextNextIdx]) {
+        getCachedImageUrl(certificates[nextNextIdx].driveUrl);
+      }
+    }
+
+    /**
+     * Advance to the next certificate
+     */
+    function nextSlide() {
+      if (certificates.length <= 1) return;
+      const nextIdx = (currentIndex + 1) % certificates.length;
+      goToSlide(nextIdx);
+    }
+
+    /**
+     * Start the automatic endless carousel
+     */
+    function startCarousel() {
+      if (isSingleCertMode || certificates.length <= 1) return;
+      stopCarousel();
+      carouselTimer = setInterval(nextSlide, CAROUSEL_INTERVAL_MS);
+    }
+
+    /**
+     * Stop carousel
+     */
+    function stopCarousel() {
+      if (carouselTimer) {
+        clearInterval(carouselTimer);
+        carouselTimer = null;
+      }
+    }
+
+    /**
+     * Merge incoming certificates from cloud or SSE
+     */
+    function mergeIncomingCertificates(incomingList) {
+      if (!incomingList || !Array.isArray(incomingList) || incomingList.length === 0) return;
+
+      let hasNewArrival = false;
+
+      for (const item of incomingList) {
+        if (!item.name || (!item.driveUrl && !item.localImagePath)) continue;
+
+        const exists = certificates.some(c => 
+          (c.driveUrl && item.driveUrl && c.driveUrl === item.driveUrl) ||
+          (c.id && item.id && c.id === item.id) ||
+          (c.name === item.name && c.timestamp === item.timestamp)
+        );
+
+        if (!exists) {
+          certificates.unshift(item);
+          hasNewArrival = true;
+          getCachedImageUrl(item.driveUrl || item.localImagePath);
+        }
+      }
+
+      if (hasNewArrival) {
+        try {
+          localStorage.setItem('telfast_certs_cache', JSON.stringify(certificates));
+        } catch (_) {}
+
+        currentIndex = 0; // Highlight the latest certificate
+        renderSlides(true);
+
+        // Pause on new submission so audience sees it, then resume automatic carousel
+        stopCarousel();
+        setTimeout(() => {
+          if (certificates.length > 1) {
+            startCarousel();
+          }
+        }, NEW_SUBMISSION_PAUSE_MS);
+      }
+    }
+
+    /**
+     * Poll Google Sheets for cloud submissions
+     */
+    async function pollCloudSubmissions() {
+      for (const url of SHEET_URLS) {
+        try {
+          const resp = await fetch(url).catch(() => null);
+          if (resp && resp.ok) {
+            const data = await resp.json();
+            if (data && data.status === 'success' && Array.isArray(data.certificates)) {
+              mergeIncomingCertificates(data.certificates);
+              break;
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    /**
+     * Connect to local SSE event stream from Flutter app (instant 0ms updates)
+     */
+    function connectLocalSSE() {
+      try {
+        const es = new EventSource(LOCAL_SSE_URL);
+        es.addEventListener('new_certificate', (e) => {
+          try {
+            const sub = JSON.parse(e.data);
+            if (sub && sub.name) {
+              mergeIncomingCertificates([sub]);
+            }
+          } catch (_) {}
+        });
+        es.onerror = () => {
+          es.close();
+          setTimeout(connectLocalSSE, 10000);
+        };
+      } catch (_) {}
+    }
+
+    /**
+     * Initialization on load
+     */
+    async function init() {
+      // 1. Check window.CERTIFICATES from gallery_data.js
+      if (window.CERTIFICATES && Array.isArray(window.CERTIFICATES) && window.CERTIFICATES.length > 0) {
+        certificates = [...window.CERTIFICATES];
+      }
+
+      // 2. Check localStorage cache
+      try {
+        const cached = localStorage.getItem('telfast_certs_cache');
+        if (cached && certificates.length === 0) {
+          certificates = JSON.parse(cached);
+        }
+      } catch (_) {}
+
+      // Initial render: if certificates exist, render them; otherwise stage stays clean
+      if (certificates.length > 0) {
+        renderSlides(false);
+      }
+
+      // 3. Connect to local SSE for instant local notification
+      connectLocalSSE();
+
+      // 4. Poll Google Sheets cloud submissions
+      await pollCloudSubmissions();
+
+      // 5. Poll cloud every 5 seconds for new submissions
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(pollCloudSubmissions, 5000);
+    }
+
+    // Toggle fullscreen on double-click or F / F11 key
+    window.addEventListener('dblclick', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'f' || e.key === 'F' || e.key === 'F11') {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+        }
+      } else if (e.key === 'ArrowRight' || e.key === ' ') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft') {
+        if (certificates.length > 1) {
+          const prevIdx = (currentIndex - 1 + certificates.length) % certificates.length;
+          goToSlide(prevIdx);
+        }
+      }
+    });
+
+    // Run on startup
+    init();
+  </script>
+</body>
+</html>
