@@ -250,6 +250,19 @@
       flex-shrink: 0;
     }
 
+    /* ── TELFAST BRAND LOGO (Top-Right Corner - Enlarged 3x) ── */
+    .telfast-logo {
+      position: fixed;
+      top: 24px;
+      right: 32px;
+      height: clamp(114px, 16.5vh, 180px);
+      width: auto;
+      object-fit: contain;
+      z-index: 100;
+      pointer-events: none;
+      filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.7));
+    }
+
     @media (max-width: 768px) {
       .view-switch-btn {
         top: 16px;
@@ -259,6 +272,11 @@
       .view-switch-btn .switch-option {
         padding: 5px 10px;
         font-size: 12px;
+      }
+      .telfast-logo {
+        top: 16px;
+        right: 16px;
+        height: clamp(60px, 10vh, 90px);
       }
     }
   </style>
@@ -286,6 +304,9 @@
       </span>
     </div>
   </a>
+
+  <!-- Telfast Brand Logo (Top-Right Corner - Enlarged 3x) -->
+  <img src="telfast_logo.png" alt="Telfast" class="telfast-logo" id="telfastLogo">
 
   <!-- Central Display Stage -->
   <div class="stage" id="stage"></div>

@@ -182,17 +182,17 @@
         0 0 50px rgba(103, 53, 132, 0.48);
     }
 
-    /* Telfast Logo in Top-Right Corner */
+    /* Telfast Logo in Top-Right Corner (Enlarged 3x) */
     .telfast-logo {
       position: fixed;
       top: 24px;
       right: 32px;
-      height: clamp(38px, 5.5vh, 60px);
+      height: clamp(114px, 16.5vh, 180px);
       width: auto;
       object-fit: contain;
       z-index: 100;
       pointer-events: none;
-      filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6));
+      filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.7));
     }
 
     /* Bottom 20% Certificate Slideshow Strip (Flowing Right to Left) */
@@ -367,6 +367,11 @@
       .view-switch-btn .switch-option {
         padding: 5px 10px;
         font-size: 12px;
+      }
+      .telfast-logo {
+        top: 16px;
+        right: 16px;
+        height: clamp(60px, 10vh, 90px);
       }
     }
   </style>
