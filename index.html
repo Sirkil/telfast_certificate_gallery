@@ -41,7 +41,7 @@
       overflow: hidden;
     }
 
-    /* Certificate Slide Container: Dead center */
+    /* Certificate Slide Container: Horizontal Carousel Slide */
     .cert-slide {
       position: absolute;
       inset: 0;
@@ -49,75 +49,137 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      width: 100vw;
+      height: 100vh;
       opacity: 0;
       visibility: hidden;
-      transform: scale(0.96);
-      transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1),
-                  transform 1.2s cubic-bezier(0.16, 1, 0.3, 1),
-                  visibility 1.2s;
+      transform: translate3d(100vw, 0, 0) scale(0.8);
+      transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+                  opacity 0.75s ease,
+                  filter 0.75s ease;
       pointer-events: none;
+      will-change: transform, opacity;
     }
 
-    /* Active visible slide */
+    /* Active visible slide: Centered, fully opaque, sharp focus */
     .cert-slide.active {
       opacity: 1;
       visibility: visible;
-      transform: scale(1);
-      z-index: 5;
+      transform: translate3d(0, 0, 0) scale(1);
+      filter: brightness(1);
+      z-index: 10;
+      pointer-events: auto;
     }
 
-    /* Fade-in for 1st submission (and still) */
+    /* Previous peek slide: Visible on the left edge */
+    .cert-slide.prev-peek {
+      opacity: 0.45;
+      visibility: visible;
+      transform: translate3d(-53vw, 0, 0) scale(0.86);
+      filter: brightness(0.72);
+      z-index: 5;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    .cert-slide.prev-peek:hover {
+      opacity: 0.68;
+      filter: brightness(0.85);
+    }
+
+    /* Next peek slide: Visible on the right edge */
+    .cert-slide.next-peek {
+      opacity: 0.45;
+      visibility: visible;
+      transform: translate3d(53vw, 0, 0) scale(0.86);
+      filter: brightness(0.72);
+      z-index: 5;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    .cert-slide.next-peek:hover {
+      opacity: 0.68;
+      filter: brightness(0.85);
+    }
+
+    /* Offscreen to the left (exited) */
+    .cert-slide.offscreen-left {
+      opacity: 0;
+      visibility: hidden;
+      transform: translate3d(-96vw, 0, 0) scale(0.78);
+      filter: brightness(0.6);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* Offscreen to the right (queued) */
+    .cert-slide.offscreen-right {
+      opacity: 0;
+      visibility: hidden;
+      transform: translate3d(96vw, 0, 0) scale(0.78);
+      filter: brightness(0.6);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* Fade-in for 1st submission (and stays still in center) */
     .cert-slide.fade-in-still {
+      transform: translate3d(0, 0, 0) scale(1) !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      filter: brightness(1) !important;
       animation: fadeInStill 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
     @keyframes fadeInStill {
       0% {
         opacity: 0;
-        transform: scale(0.92);
+        transform: translate3d(0, 0, 0) scale(0.92);
       }
       100% {
         opacity: 1;
-        transform: scale(1);
+        transform: translate3d(0, 0, 0) scale(1);
       }
     }
 
-    /* Fade-in for new submission arrival */
+    /* Horizontal slide-in for brand-new submission arrival */
     .cert-slide.new-arrival-in {
-      animation: newArrivalIn 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: newArrivalSlide 1.25s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      visibility: visible;
+      z-index: 15;
     }
 
-    @keyframes newArrivalIn {
+    @keyframes newArrivalSlide {
       0% {
         opacity: 0;
-        transform: scale(0.90);
+        transform: translate3d(85vw, 0, 0) scale(0.9);
       }
       100% {
         opacity: 1;
-        transform: scale(1);
+        transform: translate3d(0, 0, 0) scale(1);
       }
     }
 
-    /* Smooth fade-out transition */
-    .cert-slide.fade-out {
-      opacity: 0;
-      transform: scale(0.96);
-      transition: opacity 1.1s cubic-bezier(0.16, 1, 0.3, 1),
-                  transform 1.1s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    /* Certificate Image: Responsive, 1500:1167 ratio preserved, centered */
+    /* Certificate Image */
     .cert-image {
-      max-width: 90vw;
-      max-height: 90vh;
+      max-width: 58vw;
+      max-height: 65vh;
       width: auto;
       height: auto;
       object-fit: contain;
       aspect-ratio: 1500 / 1167;
-      border-radius: 12px;
+      border-radius: 14px;
       box-shadow: 
-        0 30px 80px rgba(0, 0, 0, 0.75),
-        0 0 50px rgba(103, 53, 132, 0.32);
+        0 25px 70px rgba(0, 0, 0, 0.8),
+        0 0 45px rgba(103, 53, 132, 0.38);
+      user-select: none;
+      -webkit-user-drag: none;
+      transition: transform 0.35s ease, box-shadow 0.35s ease, filter 0.35s ease;
+    }
+
+    .cert-slide.active .cert-image {
+      box-shadow: 
+        0 30px 85px rgba(0, 0, 0, 0.88),
+        0 0 55px rgba(103, 53, 132, 0.48);
     }
   </style>
 </head>
@@ -153,6 +215,7 @@
     const NEW_SUBMISSION_PAUSE_MS = 6500; // 6.5s display time for new arrivals
 
     let certificates = [];
+    let displayList = [];
     let currentIndex = 0;
     let carouselTimer = null;
     let pollTimer = null;
@@ -229,22 +292,45 @@
     }
 
     /**
-     * Render slides into stage
+     * Render slides into stage with peek view
      */
     async function renderSlides(isNewArrival = false) {
       if (!certificates || certificates.length === 0) {
         stage.innerHTML = '';
+        displayList = [];
         return;
       }
 
       stage.innerHTML = '';
       isSingleCertMode = certificates.length === 1;
 
-      for (let i = 0; i < certificates.length; i++) {
-        const item = certificates[i];
+      // Build displayList: replicate small lists so we have at least 4 slides for smooth peeking
+      if (certificates.length === 1) {
+        displayList = [...certificates];
+      } else if (certificates.length === 2) {
+        displayList = [...certificates, ...certificates, ...certificates]; // 6 items
+      } else if (certificates.length === 3) {
+        displayList = [...certificates, ...certificates]; // 6 items
+      } else {
+        displayList = [...certificates];
+      }
+
+      for (let i = 0; i < displayList.length; i++) {
+        const item = displayList[i];
         const slide = document.createElement('div');
-        slide.className = `cert-slide ${i === currentIndex ? 'active' : ''}`;
+        slide.className = 'cert-slide';
         slide.id = `slide-${i}`;
+
+        // Clicking peek slides navigates to them
+        slide.addEventListener('click', (e) => {
+          if (slide.classList.contains('prev-peek')) {
+            e.stopPropagation();
+            prevSlide();
+          } else if (slide.classList.contains('next-peek')) {
+            e.stopPropagation();
+            nextSlide();
+          }
+        });
 
         const img = document.createElement('img');
         img.className = 'cert-image';
@@ -272,15 +358,18 @@
         preloadImage(resolvedUrl);
       }
 
-      // Case 1: First submission (1 certificate total) -> Fade in and remain still
+      // Case 1: First submission (1 certificate total) -> Fade in and remain still in center
       if (isSingleCertMode) {
         const firstSlide = document.getElementById('slide-0');
         if (firstSlide) {
-          firstSlide.classList.add('fade-in-still');
+          firstSlide.className = 'cert-slide active fade-in-still';
         }
         stopCarousel();
         return;
       }
+
+      // Initialize classes for active, prev-peek, next-peek, and offscreen
+      applySlideClasses(currentIndex);
 
       // Case 2: New arrival in multi-certificate set
       if (isNewArrival) {
@@ -295,38 +384,100 @@
     }
 
     /**
-     * Smoothly cross-fade to slide at targetIdx
+     * Apply active, prev-peek, next-peek, and offscreen classes
      */
-    function goToSlide(targetIdx) {
-      if (certificates.length <= 1) return;
+    function applySlideClasses(idx) {
+      if (displayList.length <= 1) return;
+      const total = displayList.length;
+      const prevIdx = (idx - 1 + total) % total;
+      const nextIdx = (idx + 1) % total;
+      const prevPrevIdx = (idx - 2 + total) % total;
 
-      const currentSlide = document.getElementById(`slide-${currentIndex}`);
-      const nextSlide = document.getElementById(`slide-${targetIdx}`);
-
-      if (currentSlide) {
-        currentSlide.className = 'cert-slide fade-out';
+      for (let i = 0; i < total; i++) {
+        const s = document.getElementById(`slide-${i}`);
+        if (!s) continue;
+        if (i === idx) {
+          s.className = 'cert-slide active';
+        } else if (i === prevIdx) {
+          s.className = 'cert-slide prev-peek';
+        } else if (i === nextIdx) {
+          s.className = 'cert-slide next-peek';
+        } else if (i === prevPrevIdx) {
+          s.className = 'cert-slide offscreen-left';
+        } else {
+          s.className = 'cert-slide offscreen-right';
+        }
       }
+    }
 
-      if (nextSlide) {
-        nextSlide.className = 'cert-slide active';
+    let isTransitioning = false;
+
+    /**
+     * Smoothly slide horizontally to targetIdx with visible next and previous peeks
+     * direction: 'forward' (right-to-left) or 'backward' (left-to-right)
+     */
+    function goToSlide(targetIdx, direction = 'forward') {
+      if (displayList.length <= 1) return;
+      if (targetIdx === currentIndex) return;
+      if (isTransitioning) return;
+      isTransitioning = true;
+
+      const total = displayList.length;
+
+      if (direction === 'forward') {
+        // Incoming peek slide on the right: ensure it starts offscreen right
+        const incomingPeekIdx = (targetIdx + 1) % total;
+        const incomingSlide = document.getElementById(`slide-${incomingPeekIdx}`);
+        if (incomingSlide) {
+          incomingSlide.style.transition = 'none';
+          incomingSlide.className = 'cert-slide offscreen-right';
+          void incomingSlide.offsetWidth; // Force layout reflow
+          incomingSlide.style.transition = '';
+        }
+      } else {
+        // Incoming peek slide on the left: ensure it starts offscreen left
+        const incomingPeekIdx = (targetIdx - 1 + total) % total;
+        const incomingSlide = document.getElementById(`slide-${incomingPeekIdx}`);
+        if (incomingSlide) {
+          incomingSlide.style.transition = 'none';
+          incomingSlide.className = 'cert-slide offscreen-left';
+          void incomingSlide.offsetWidth; // Force layout reflow
+          incomingSlide.style.transition = '';
+        }
       }
 
       currentIndex = targetIdx;
+      applySlideClasses(currentIndex);
 
-      // Preload next certificate ahead of time
-      const nextNextIdx = (currentIndex + 1) % certificates.length;
-      if (certificates[nextNextIdx]) {
-        getCachedImageUrl(certificates[nextNextIdx].driveUrl);
+      setTimeout(() => {
+        isTransitioning = false;
+      }, 750);
+
+      // Preload next certificates ahead of time
+      const nextNextIdx = (currentIndex + 2) % total;
+      if (displayList[nextNextIdx]) {
+        getCachedImageUrl(displayList[nextNextIdx].driveUrl || displayList[nextNextIdx].localImagePath);
       }
     }
 
     /**
-     * Advance to the next certificate
+     * Advance to the next certificate in the carousel
      */
     function nextSlide() {
-      if (certificates.length <= 1) return;
-      const nextIdx = (currentIndex + 1) % certificates.length;
-      goToSlide(nextIdx);
+      if (displayList.length <= 1) return;
+      const nextIdx = (currentIndex + 1) % displayList.length;
+      goToSlide(nextIdx, 'forward');
+      resetCarouselTimer();
+    }
+
+    /**
+     * Advance to the previous certificate in the carousel
+     */
+    function prevSlide() {
+      if (displayList.length <= 1) return;
+      const prevIdx = (currentIndex - 1 + displayList.length) % displayList.length;
+      goToSlide(prevIdx, 'backward');
+      resetCarouselTimer();
     }
 
     /**
@@ -345,6 +496,16 @@
       if (carouselTimer) {
         clearInterval(carouselTimer);
         carouselTimer = null;
+      }
+    }
+
+    /**
+     * Reset carousel timer on manual interaction
+     */
+    function resetCarouselTimer() {
+      if (carouselTimer) {
+        clearInterval(carouselTimer);
+        carouselTimer = setInterval(nextSlide, CAROUSEL_INTERVAL_MS);
       }
     }
 
@@ -481,9 +642,56 @@
       } else if (e.key === 'ArrowRight' || e.key === ' ') {
         nextSlide();
       } else if (e.key === 'ArrowLeft') {
-        if (certificates.length > 1) {
-          const prevIdx = (currentIndex - 1 + certificates.length) % certificates.length;
-          goToSlide(prevIdx);
+        prevSlide();
+      }
+    });
+
+    // Touch & Swipe Support (for touch displays / tablets / kiosks)
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    window.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches.length > 0) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchend', (e) => {
+      if (e.changedTouches && e.changedTouches.length > 0) {
+        const deltaX = e.changedTouches[0].clientX - touchStartX;
+        const deltaY = e.changedTouches[0].clientY - touchStartY;
+        if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY)) {
+          if (deltaX < 0) {
+            nextSlide();
+          } else {
+            prevSlide();
+          }
+        }
+      }
+    }, { passive: true });
+
+    // Mouse Drag Support (horizontal swipe with mouse)
+    let isMouseDown = false;
+    let mouseStartX = 0;
+    let mouseStartY = 0;
+
+    window.addEventListener('mousedown', (e) => {
+      isMouseDown = true;
+      mouseStartX = e.clientX;
+      mouseStartY = e.clientY;
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (!isMouseDown) return;
+      isMouseDown = false;
+      const deltaX = e.clientX - mouseStartX;
+      const deltaY = e.clientY - mouseStartY;
+      if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX < 0) {
+          nextSlide();
+        } else {
+          prevSlide();
         }
       }
     });
