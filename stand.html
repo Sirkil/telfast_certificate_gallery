@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telfast GAC - Stand Display</title>
+  <meta name="description" content="Telfast GAC Doctors Against Drowsy Driving - Live Stand Display">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-image: url('plate_background.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-color: #1a0a2e;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: default;
+    }
+
+    /* ── MAIN STAGE ─────────────────────────────────────────── */
+    .stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── NAME PLATES ────────────────────────────────────────── */
+    .plate {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-image: url('plate_bg.png');
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      overflow: hidden;
+      transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+                  box-shadow 0.28s ease,
+                  filter 0.28s ease;
+      cursor: pointer;
+    }
+
+    .plate:hover {
+      transform: scale(1.06);
+      z-index: 50;
+      box-shadow: 0 4px 16px rgba(103, 53, 132, 0.6);
+      filter: brightness(1.08);
+    }
+
+    .plate.active-selected {
+      transform: scale(1.04);
+      z-index: 40;
+      box-shadow: 0 0 16px rgba(168, 85, 247, 0.85);
+      filter: brightness(1.12);
+    }
+
+    .plate-text {
+      color: #673584;
+      font-weight: 700;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 6px;
+      width: 100%;
+      line-height: 1.15;
+    }
+
+    @keyframes platePopIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.3) rotateY(90deg);
+      }
+      50% {
+        opacity: 0.7;
+        transform: scale(1.15) rotateY(-5deg);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) rotateY(0deg);
+      }
+    }
+
+    .plate.new-plate {
+      animation: platePopIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      z-index: 45;
+    }
+
+    .plate.empty {
+      opacity: 0.22;
+      cursor: default;
+    }
+
+    /* ── CENTRAL CERTIFICATE ─────────────────────────────────── */
+    .center-cert-container {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+    }
+
+    .center-cert-card {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 100%;
+      max-height: 100%;
+      transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .center-cert-card.new-arrival {
+      animation: certPopIn 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
+    @keyframes certPopIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.85);
+        filter: brightness(1.25);
+      }
+      50% {
+        transform: scale(1.03);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: brightness(1);
+      }
+    }
+
+    .center-cert-img {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      aspect-ratio: 1500 / 1167;
+      border-radius: 12px;
+      box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.85),
+        0 0 40px rgba(103, 53, 132, 0.45);
+      border: 2px solid rgba(103, 53, 132, 0.5);
+      user-select: none;
+      -webkit-user-drag: none;
+      display: block;
+    }
+
+    .center-cert-name {
+      position: absolute;
+      left: 6%;
+      right: 6%;
+      text-align: center;
+      color: #673584;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.7);
+      pointer-events: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.15;
+    }
+
+    /* ── VIEW SWITCH BUTTON (Top-Left Corner) ────────────────── */
+    .view-switch-btn {
+      position: fixed;
+      top: 24px;
+      left: 32px;
+      z-index: 100;
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+      background: rgba(18, 7, 28, 0.72);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(103, 53, 132, 0.45);
+      border-radius: 9999px;
+      padding: 4px;
+      box-shadow: 
+        0 8px 24px rgba(0, 0, 0, 0.5),
+        0 0 15px rgba(103, 53, 132, 0.2);
+      transition: all 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .view-switch-btn:hover {
+      border-color: rgba(168, 85, 247, 0.75);
+      box-shadow: 
+        0 10px 28px rgba(0, 0, 0, 0.6),
+        0 0 22px rgba(168, 85, 247, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .view-switch-btn .switch-track {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .view-switch-btn .switch-option {
+      position: relative;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      color: rgba(255, 255, 255, 0.65);
+      border-radius: 9999px;
+      transition: all 0.25s ease;
+      white-space: nowrap;
+    }
+
+    .view-switch-btn .switch-option.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, #673584 0%, #8c3cb5 100%);
+      box-shadow: 
+        0 2px 10px rgba(103, 53, 132, 0.55),
+        inset 0 1px 1px rgba(255, 255, 255, 0.25);
+    }
+
+    .view-switch-btn:hover .switch-option:not(.active) {
+      color: #ffffff;
+    }
+
+    .view-switch-btn .switch-icon {
+      width: 14px;
+      height: 14px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 768px) {
+      .view-switch-btn {
+        top: 16px;
+        left: 16px;
+        padding: 3px;
+      }
+      .view-switch-btn .switch-option {
+        padding: 5px 10px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- View Switch Button (Top-Left Corner: Gallery <-> Stand) -->
+  <a href="index.html" class="view-switch-btn" id="viewSwitchBtn" title="Switch to Gallery View (or press 'G')">
+    <div class="switch-track">
+      <span class="switch-option">
+        <svg class="switch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        Gallery
+      </span>
+      <span class="switch-option active">
+        <svg class="switch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Stand
+      </span>
+    </div>
+  </a>
+
+  <!-- Central Display Stage -->
+  <div class="stage" id="stage"></div>
+
+  <!-- Optional Fallback Static Data -->
+  <script src="gallery_data.js"></script>
+
+  <script>
+    /**
+     * =======================================================================
+     * TELFAST GAC — STAND DISPLAY WITH CENTRAL CERTIFICATE
+     * =======================================================================
+     * - Surround: 48 name plates (3 top rows, 9 on left & right sides, 3 bottom rows)
+     * - Center: Latest submitted certificate prominently showcased
+     * - On submission: The new certificate appears in the center with pop-in
+     *   animation, and the doctor's name is added to plate #0
+     * - Interactive: Clicking any doctor's plate shows their certificate in the center
+     * =======================================================================
+     */
+
+    const SHEET_URLS = [
+      'https://script.google.com/macros/s/AKfycbzgIVp72CexxQYMDm2dFqzOEJ2TAiIbU6aKiLCnRhfghFDYqRZxRMGkVcMgghOO-sAT/exec',
+      'https://script.google.com/macros/s/AKfycbyJ2Bbgju4GSU0-nszESg-wAFClNN1N0YfCsYJDZYBDsqLVorms9f1Q4KSL4otXwpc/exec'
+    ];
+    const LOCAL_SSE_URL = 'http://localhost:8765/events';
+    const CACHE_NAME = 'telfast-cert-cache-v2';
+
+    // Layout constants matching stand_screen.dart
+    const PLATES_H_COUNT = 5;
+    const PLATES_TOP_ROWS = 3;
+    const PLATES_MIDDLE_ROWS = 9;
+    const PLATES_BOTTOM_ROWS = 3;
+    const PLATES_TOTAL_ROWS = PLATES_TOP_ROWS + PLATES_MIDDLE_ROWS + PLATES_BOTTOM_ROWS; // 15
+    const PLATE_ASPECT = 197 / 38;
+    const SPACING_FACTOR = 0.08;
+
+    let submissions = [];
+    let doctors = [];
+    let latestCert = null;
+    let pollTimer = null;
+    const blobUrlMap = new Map();
+
+    const stageEl = document.getElementById('stage');
+
+    /**
+     * Convert Google Drive view URL to direct high-res image link
+     */
+    function extractDirectDriveImageUrl(url) {
+      if (!url) return '';
+      if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+      if (url.includes('lh3.googleusercontent.com') || url.includes('thumbnail?id=')) return url;
+
+      const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        return `https://lh3.googleusercontent.com/d/${match[1]}=w1600`;
+      }
+      return url;
+    }
+
+    /**
+     * Cache API & Memory preloader for 0ms transitions
+     */
+    async function getCachedImageUrl(rawUrl) {
+      const directUrl = extractDirectDriveImageUrl(rawUrl);
+      if (!directUrl) return '';
+
+      if (blobUrlMap.has(directUrl)) {
+        return blobUrlMap.get(directUrl);
+      }
+
+      if ('caches' in window) {
+        try {
+          const cache = await caches.open(CACHE_NAME);
+          const cached = await cache.match(directUrl);
+          if (cached) {
+            const blob = await cached.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            blobUrlMap.set(directUrl, blobUrl);
+            return blobUrl;
+          }
+
+          const resp = await fetch(directUrl, { mode: 'cors' }).catch(() => null);
+          if (resp && resp.ok) {
+            await cache.put(directUrl, resp.clone());
+            const blob = await resp.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            blobUrlMap.set(directUrl, blobUrl);
+            return blobUrl;
+          }
+        } catch (err) {}
+      }
+
+      return directUrl;
+    }
+
+    // ── Layout Geometry ─────────────────────────────────────
+    function computeLayout() {
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+
+      const vertAspectSum = PLATES_TOTAL_ROWS / PLATE_ASPECT;
+      const vertSpacingSum = (PLATES_TOTAL_ROWS - 1) * SPACING_FACTOR;
+
+      const maxPWforW = W / (PLATES_H_COUNT + (PLATES_H_COUNT - 1) * SPACING_FACTOR);
+      const maxPWforH = H / (vertAspectSum + vertSpacingSum);
+
+      const pw = Math.min(maxPWforW, maxPWforH);
+      const ph = pw / PLATE_ASPECT;
+      const sp = pw * SPACING_FACTOR;
+      const hStep = pw + sp;
+      const vStep = ph + sp;
+
+      const frameW = PLATES_H_COUNT * hStep - sp;
+      const frameH = PLATES_TOTAL_ROWS * vStep - sp;
+      const xOff = (W - frameW) / 2;
+      const yOff = (H - frameH) / 2;
+
+      return { pw, ph, hStep, vStep, sp, xOff, yOff };
+    }
+
+    // ── Plate slots (48 outer perimeter slots) ──────────────
+    function getPlateSlots(layout) {
+      const { pw, ph, hStep, vStep, xOff, yOff } = layout;
+      const slots = [];
+
+      // 1. Top 3 rows across all 5 columns (15 slots)
+      for (let row = 0; row < PLATES_TOP_ROWS; row++) {
+        for (let col = 0; col < PLATES_H_COUNT; col++) {
+          slots.push({
+            left: xOff + col * hStep,
+            top: yOff + row * vStep,
+            w: pw,
+            h: ph
+          });
+        }
+      }
+
+      // 2. Middle 9 rows (col 0 and col 4 only; cols 1-3 reserved for central certificate) (18 slots)
+      const middleYStart = yOff + PLATES_TOP_ROWS * vStep;
+      for (let row = 0; row < PLATES_MIDDLE_ROWS; row++) {
+        for (let col = 0; col < PLATES_H_COUNT; col++) {
+          const isCentral = col > 0 && col < PLATES_H_COUNT - 1;
+          if (isCentral) continue;
+          slots.push({
+            left: xOff + col * hStep,
+            top: middleYStart + row * vStep,
+            w: pw,
+            h: ph
+          });
+        }
+      }
+
+      // 3. Bottom 3 rows across all 5 columns (15 slots)
+      const bottomYStart = yOff + (PLATES_TOP_ROWS + PLATES_MIDDLE_ROWS) * vStep;
+      for (let row = 0; row < PLATES_BOTTOM_ROWS; row++) {
+        for (let col = 0; col < PLATES_H_COUNT; col++) {
+          slots.push({
+            left: xOff + col * hStep,
+            top: bottomYStart + row * vStep,
+            w: pw,
+            h: ph
+          });
+        }
+      }
+
+      return slots;
+    }
+
+    // ── Central Certificate Slot ────────────────────────────
+    function getCenterCertSlot(layout) {
+      const { hStep, vStep, sp, xOff, yOff } = layout;
+      return {
+        left: xOff + 1 * hStep,
+        top: yOff + PLATES_TOP_ROWS * vStep,
+        w: (PLATES_H_COUNT - 2) * hStep - sp,
+        h: PLATES_MIDDLE_ROWS * vStep - sp
+      };
+    }
+
+    // ── Render Entire Stand ─────────────────────────────────
+    async function renderStand(newArrivalPlateIndex = -1, isNewCertArrival = false) {
+      const layout = computeLayout();
+      const slots = getPlateSlots(layout);
+      const centerSlot = getCenterCertSlot(layout);
+
+      stageEl.innerHTML = '';
+
+      // 1. Render Central Certificate
+      const centerContainer = document.createElement('div');
+      centerContainer.className = 'center-cert-container';
+      centerContainer.style.left = centerSlot.left + 'px';
+      centerContainer.style.top = centerSlot.top + 'px';
+      centerContainer.style.width = centerSlot.w + 'px';
+      centerContainer.style.height = centerSlot.h + 'px';
+
+      const certCard = document.createElement('div');
+      certCard.className = 'center-cert-card' + (isNewCertArrival ? ' new-arrival' : '');
+      certCard.id = 'centerCertCard';
+
+      const certImg = document.createElement('img');
+      certImg.className = 'center-cert-img';
+      certImg.id = 'centerCertImg';
+
+      const targetCert = latestCert || (submissions.length > 0 ? submissions[0] : null);
+      certImg.alt = targetCert && targetCert.name ? `Certificate for ${targetCert.name}` : 'Latest Certificate';
+
+      const nameOverlay = document.createElement('div');
+      nameOverlay.className = 'center-cert-name';
+      nameOverlay.id = 'centerCertName';
+
+      let imgUrl = 'certificate.png';
+      let showNameOverlay = false;
+
+      if (targetCert) {
+        if (targetCert.driveUrl || targetCert.localImagePath) {
+          const resolved = await getCachedImageUrl(targetCert.driveUrl || targetCert.localImagePath);
+          imgUrl = resolved || targetCert.localImagePath || 'certificate.png';
+          if (!targetCert.driveUrl && targetCert.name) {
+            showNameOverlay = true;
+          }
+        } else if (targetCert.name) {
+          imgUrl = 'certificate.png';
+          showNameOverlay = true;
+        }
+      }
+
+      certImg.src = imgUrl;
+
+      certImg.onerror = () => {
+        if (targetCert && targetCert.driveUrl) {
+          const match = targetCert.driveUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || targetCert.driveUrl.match(/id=([a-zA-Z0-9_-]+)/);
+          if (match && match[1] && !certImg.dataset.triedFallback) {
+            certImg.dataset.triedFallback = '1';
+            certImg.src = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1600`;
+            return;
+          }
+        }
+        certImg.src = 'certificate.png';
+        if (targetCert && targetCert.name) {
+          nameOverlay.style.display = 'block';
+        }
+      };
+
+      if (showNameOverlay && targetCert && targetCert.name) {
+        const rawName = targetCert.name.trim();
+        const displayDocName = (rawName.toUpperCase().startsWith('DR.') || rawName.toUpperCase().startsWith('DR '))
+          ? rawName
+          : `DR. ${rawName}`;
+        nameOverlay.textContent = displayDocName;
+        nameOverlay.style.display = 'block';
+      } else {
+        nameOverlay.style.display = 'none';
+      }
+
+      certCard.appendChild(certImg);
+      certCard.appendChild(nameOverlay);
+      centerContainer.appendChild(certCard);
+      stageEl.appendChild(centerContainer);
+
+      function adjustNameOverlay() {
+        const h = certImg.clientHeight || centerSlot.h;
+        nameOverlay.style.fontSize = Math.max(12, Math.round(h * 0.055)) + 'px';
+        nameOverlay.style.top = Math.round(h * 0.41) + 'px';
+      }
+      certImg.onload = adjustNameOverlay;
+      setTimeout(adjustNameOverlay, 60);
+
+      // 2. Render 48 Doctor Name Plates
+      for (let i = 0; i < slots.length; i++) {
+        const slot = slots[i];
+        const name = i < doctors.length ? doctors[i] : '';
+
+        const plateDiv = document.createElement('div');
+        plateDiv.className = 'plate' + (name ? '' : ' empty');
+        if (i === newArrivalPlateIndex) {
+          plateDiv.classList.add('new-plate');
+        }
+
+        // Highlight if this plate corresponds to currently displayed certificate
+        if (targetCert && targetCert.name && name && name.trim().toLowerCase() === targetCert.name.trim().toLowerCase()) {
+          plateDiv.classList.add('active-selected');
+        }
+
+        plateDiv.style.left = slot.left + 'px';
+        plateDiv.style.top = slot.top + 'px';
+        plateDiv.style.width = slot.w + 'px';
+        plateDiv.style.height = slot.h + 'px';
+
+        const textSpan = document.createElement('span');
+        textSpan.className = 'plate-text';
+        textSpan.textContent = name;
+        textSpan.style.fontSize = (slot.h * 0.35) + 'px';
+
+        plateDiv.appendChild(textSpan);
+
+        // Clicking any plate displays that doctor's certificate in the center
+        if (name) {
+          plateDiv.title = `Click to view Dr. ${name}'s certificate`;
+          plateDiv.addEventListener('click', () => {
+            const found = submissions.find(s => s.name && s.name.trim().toLowerCase() === name.trim().toLowerCase());
+            latestCert = found || { name: name, localImagePath: 'certificate.png' };
+            renderStand(-1, true);
+          });
+        }
+
+        stageEl.appendChild(plateDiv);
+      }
+    }
+
+    // ── Handle Incoming Submissions ─────────────────────────
+    function mergeIncoming(incomingList) {
+      if (!incomingList || !Array.isArray(incomingList) || incomingList.length === 0) return;
+
+      let hasNewArrival = false;
+      let newestItem = null;
+
+      for (const item of incomingList) {
+        if (!item.name && !item.driveUrl && !item.localImagePath) continue;
+        const nameStr = (item.name || '').trim();
+
+        const exists = submissions.some(s => 
+          (s.driveUrl && item.driveUrl && s.driveUrl === item.driveUrl) ||
+          (s.id && item.id && s.id === item.id) ||
+          (s.name && item.name && s.name.trim().toLowerCase() === nameStr.toLowerCase() && s.timestamp === item.timestamp)
+        );
+
+        if (!exists) {
+          submissions.unshift(item);
+          if (nameStr && !doctors.includes(nameStr)) {
+            doctors.unshift(nameStr);
+          }
+          if (!hasNewArrival) {
+            hasNewArrival = true;
+            newestItem = item;
+          }
+          if (item.driveUrl || item.localImagePath) {
+            getCachedImageUrl(item.driveUrl || item.localImagePath);
+          }
+        }
+      }
+
+      if (hasNewArrival) {
+        latestCert = newestItem || submissions[0];
+        try {
+          localStorage.setItem('telfast_stand_submissions', JSON.stringify(submissions));
+          localStorage.setItem('telfast_stand_doctors', JSON.stringify(doctors));
+          localStorage.setItem('telfast_certs_cache', JSON.stringify(submissions));
+        } catch (_) {}
+
+        // Plate #0 pops in and Central Certificate pops in
+        renderStand(0, true);
+      }
+    }
+
+    // ── Google Sheets Polling ───────────────────────────────
+    async function pollCloudSubmissions() {
+      for (const url of SHEET_URLS) {
+        try {
+          const resp = await fetch(url).catch(() => null);
+          if (resp && resp.ok) {
+            const data = await resp.json();
+            if (data && data.status === 'success' && Array.isArray(data.certificates)) {
+              mergeIncoming(data.certificates);
+              break;
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    // ── Local SSE Event Stream ──────────────────────────────
+    function connectLocalSSE() {
+      try {
+        const es = new EventSource(LOCAL_SSE_URL);
+        es.addEventListener('new_certificate', (e) => {
+          try {
+            const sub = JSON.parse(e.data);
+            if (sub && (sub.name || sub.driveUrl)) {
+              mergeIncoming([sub]);
+            }
+          } catch (_) {}
+        });
+        es.onerror = () => {
+          es.close();
+          setTimeout(connectLocalSSE, 10000);
+        };
+      } catch (_) {}
+    }
+
+    // ── Responsive Resize ───────────────────────────────────
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => renderStand(), 120);
+    });
+
+    // ── Keyboard & Fullscreen ───────────────────────────────
+    window.addEventListener('dblclick', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'f' || e.key === 'F' || e.key === 'F11') {
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      } else if (e.key === 'g' || e.key === 'G') {
+        window.location.href = 'index.html';
+      }
+    });
+
+    // ── Initialization ──────────────────────────────────────
+    async function init() {
+      // 1. Check window.CERTIFICATES
+      if (window.CERTIFICATES && Array.isArray(window.CERTIFICATES) && window.CERTIFICATES.length > 0) {
+        submissions = [...window.CERTIFICATES];
+        for (const cert of submissions) {
+          if (cert.name && !doctors.includes(cert.name)) {
+            doctors.push(cert.name);
+          }
+        }
+      }
+
+      // 2. Check localStorage cache
+      try {
+        const cachedSubs = localStorage.getItem('telfast_stand_submissions') || localStorage.getItem('telfast_certs_cache');
+        if (cachedSubs && submissions.length === 0) {
+          submissions = JSON.parse(cachedSubs);
+        }
+        const cachedDocs = localStorage.getItem('telfast_stand_doctors');
+        if (cachedDocs && doctors.length === 0) {
+          doctors = JSON.parse(cachedDocs);
+        }
+      } catch (_) {}
+
+      // Synchronize doctors and submissions
+      if (submissions.length > 0) {
+        for (const s of submissions) {
+          if (s.name && !doctors.includes(s.name)) {
+            doctors.push(s.name);
+          }
+        }
+        latestCert = submissions[0];
+      } else if (doctors.length > 0) {
+        latestCert = { name: doctors[0], localImagePath: 'certificate.png' };
+      } else {
+        latestCert = { name: 'Dr. Participant', localImagePath: 'certificate.png' };
+      }
+
+      // Initial render
+      renderStand();
+
+      // Connect SSE & Cloud polling
+      connectLocalSSE();
+      await pollCloudSubmissions();
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(pollCloudSubmissions, 5000);
+    }
+
+    init();
+  </script>
+</body>
+</html>

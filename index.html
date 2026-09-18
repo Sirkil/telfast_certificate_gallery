@@ -30,11 +30,11 @@
       cursor: default;
     }
 
-    /* Centered display stage */
+    /* Centered display stage - occupies top 80% of screen */
     .stage {
       position: relative;
       width: 100vw;
-      height: 100vh;
+      height: 80vh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -50,7 +50,7 @@
       align-items: center;
       justify-content: center;
       width: 100vw;
-      height: 100vh;
+      height: 100%;
       opacity: 0;
       visibility: hidden;
       transform: translate3d(100vw, 0, 0) scale(0.8);
@@ -75,7 +75,7 @@
     .cert-slide.prev-peek {
       opacity: 0.45;
       visibility: visible;
-      transform: translate3d(-53vw, 0, 0) scale(0.86);
+      transform: translate3d(-50vw, 0, 0) scale(0.86);
       filter: brightness(0.72);
       z-index: 5;
       pointer-events: auto;
@@ -90,7 +90,7 @@
     .cert-slide.next-peek {
       opacity: 0.45;
       visibility: visible;
-      transform: translate3d(53vw, 0, 0) scale(0.86);
+      transform: translate3d(50vw, 0, 0) scale(0.86);
       filter: brightness(0.72);
       z-index: 5;
       pointer-events: auto;
@@ -159,18 +159,18 @@
       }
     }
 
-    /* Certificate Image */
+    /* Certificate Image - reduced in size by 20% (was 58vw x 65vh) */
     .cert-image {
-      max-width: 58vw;
-      max-height: 65vh;
+      max-width: 46.4vw;
+      max-height: 52vh;
       width: auto;
       height: auto;
       object-fit: contain;
       aspect-ratio: 1500 / 1167;
       border-radius: 14px;
       box-shadow: 
-        0 25px 70px rgba(0, 0, 0, 0.8),
-        0 0 45px rgba(103, 53, 132, 0.38);
+        0 22px 60px rgba(0, 0, 0, 0.82),
+        0 0 40px rgba(103, 53, 132, 0.38);
       user-select: none;
       -webkit-user-drag: none;
       transition: transform 0.35s ease, box-shadow 0.35s ease, filter 0.35s ease;
@@ -178,14 +178,236 @@
 
     .cert-slide.active .cert-image {
       box-shadow: 
-        0 30px 85px rgba(0, 0, 0, 0.88),
-        0 0 55px rgba(103, 53, 132, 0.48);
+        0 28px 75px rgba(0, 0, 0, 0.88),
+        0 0 50px rgba(103, 53, 132, 0.48);
+    }
+
+    /* Telfast Logo in Top-Right Corner */
+    .telfast-logo {
+      position: fixed;
+      top: 24px;
+      right: 32px;
+      height: clamp(38px, 5.5vh, 60px);
+      width: auto;
+      object-fit: contain;
+      z-index: 100;
+      pointer-events: none;
+      filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6));
+    }
+
+    /* Bottom 20% Certificate Slideshow Strip (Flowing Right to Left) */
+    .bottom-slideshow {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100vw;
+      height: 20vh;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(15, 5, 24, 0.3) 0%, rgba(15, 5, 24, 0.84) 100%);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-top: 1px solid rgba(103, 53, 132, 0.35);
+      box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.6);
+      /* Elegant soft fade at screen edges */
+      mask-image: linear-gradient(to right, transparent 0%, black 3.5%, black 96.5%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3.5%, black 96.5%, transparent 100%);
+    }
+
+    .ticker-wrapper {
+      display: flex;
+      width: max-content;
+      will-change: transform;
+      animation: tickerScroll linear infinite;
+    }
+
+    .ticker-wrapper:hover {
+      animation-play-state: paused;
+    }
+
+    @keyframes tickerScroll {
+      0% {
+        transform: translate3d(0, 0, 0);
+      }
+      100% {
+        transform: translate3d(-50%, 0, 0);
+      }
+    }
+
+    .ticker-track {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 8px;
+      flex-shrink: 0;
+    }
+
+    .ticker-item {
+      flex: 0 0 auto;
+      height: calc(20vh - 26px);
+      max-height: 140px;
+      min-height: 60px;
+      aspect-ratio: 1500 / 1167;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+      border: 1.5px solid rgba(103, 53, 132, 0.45);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+      background-color: rgba(22, 10, 32, 0.7);
+      transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.4, 1),
+                  border-color 0.28s ease,
+                  box-shadow 0.28s ease;
+    }
+
+    .ticker-item:hover {
+      transform: translateY(-4px) scale(1.06);
+      border-color: #a450e4;
+      box-shadow: 0 8px 24px rgba(164, 80, 228, 0.45);
+      z-index: 10;
+    }
+
+    .ticker-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      transition: filter 0.25s ease;
+    }
+
+    .ticker-item:hover img {
+      filter: brightness(1.08);
+    }
+
+    /* View Switch Button in Top-Left Corner */
+    .view-switch-btn {
+      position: fixed;
+      top: 24px;
+      left: 32px;
+      z-index: 100;
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+      background: rgba(18, 7, 28, 0.72);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(103, 53, 132, 0.45);
+      border-radius: 9999px;
+      padding: 4px;
+      box-shadow: 
+        0 8px 24px rgba(0, 0, 0, 0.5),
+        0 0 15px rgba(103, 53, 132, 0.2);
+      transition: all 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .view-switch-btn:hover {
+      border-color: rgba(168, 85, 247, 0.75);
+      box-shadow: 
+        0 10px 28px rgba(0, 0, 0, 0.6),
+        0 0 22px rgba(168, 85, 247, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .view-switch-btn .switch-track {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .view-switch-btn .switch-option {
+      position: relative;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      color: rgba(255, 255, 255, 0.65);
+      border-radius: 9999px;
+      transition: all 0.25s ease;
+      white-space: nowrap;
+    }
+
+    .view-switch-btn .switch-option.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, #673584 0%, #8c3cb5 100%);
+      box-shadow: 
+        0 2px 10px rgba(103, 53, 132, 0.55),
+        inset 0 1px 1px rgba(255, 255, 255, 0.25);
+    }
+
+    .view-switch-btn:hover .switch-option:not(.active) {
+      color: #ffffff;
+    }
+
+    .view-switch-btn .switch-icon {
+      width: 14px;
+      height: 14px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 768px) {
+      .view-switch-btn {
+        top: 16px;
+        left: 16px;
+        padding: 3px;
+      }
+      .view-switch-btn .switch-option {
+        padding: 5px 10px;
+        font-size: 12px;
+      }
     }
   </style>
 </head>
 <body>
-  <!-- Pure Centered Showcase Stage: ONLY Background & Certificate Image -->
+  <!-- View Switch Button (Top-Left Corner: Gallery <-> Stand) -->
+  <a href="stand.html" class="view-switch-btn" id="viewSwitchBtn" title="Switch to Stand View (or press 'S')">
+    <div class="switch-track">
+      <span class="switch-option active">
+        <svg class="switch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        Gallery
+      </span>
+      <span class="switch-option">
+        <svg class="switch-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Stand
+      </span>
+    </div>
+  </a>
+
+  <!-- Telfast Brand Logo (Top-Right Corner) -->
+  <img src="telfast_logo.png" alt="Telfast" class="telfast-logo" id="telfastLogo">
+
+  <!-- Centered Showcase Stage: ONLY Background & Certificate Image (Top 80%) -->
   <div class="stage" id="stage"></div>
+
+  <!-- Bottom 20% Certificate Slideshow Strip (Flowing Right to Left) -->
+  <div class="bottom-slideshow" id="bottomSlideshow" style="display: none;">
+    <div class="ticker-wrapper" id="tickerWrapper">
+      <div class="ticker-track" id="tickerTrack1"></div>
+      <div class="ticker-track" id="tickerTrack2" aria-hidden="true"></div>
+    </div>
+  </div>
 
   <!-- Fallback static data if opened offline / file protocol -->
   <script src="gallery_data.js"></script>
@@ -220,6 +442,7 @@
     let carouselTimer = null;
     let pollTimer = null;
     let isSingleCertMode = false;
+    let isPreviewFallback = false;
     const blobUrlMap = new Map(); // In-memory cached Object URLs
 
     const stage = document.getElementById('stage');
@@ -527,6 +750,10 @@
         );
 
         if (!exists) {
+          if (isPreviewFallback) {
+            certificates = [];
+            isPreviewFallback = false;
+          }
           certificates.unshift(item);
           hasNewArrival = true;
           getCachedImageUrl(item.driveUrl || item.localImagePath);
@@ -540,6 +767,7 @@
 
         currentIndex = 0; // Highlight the latest certificate
         renderSlides(true);
+        renderBottomSlideshow();
 
         // Pause on new submission so audience sees it, then resume automatic carousel
         stopCarousel();
@@ -549,6 +777,80 @@
           }
         }, NEW_SUBMISSION_PAUSE_MS);
       }
+    }
+
+    /**
+     * Render the bottom 20% continuous right-to-left slideshow
+     */
+    function renderBottomSlideshow() {
+      const strip = document.getElementById('bottomSlideshow');
+      const track1 = document.getElementById('tickerTrack1');
+      const track2 = document.getElementById('tickerTrack2');
+      const wrapper = document.getElementById('tickerWrapper');
+
+      if (!certificates || certificates.length === 0) {
+        if (strip) strip.style.display = 'none';
+        return;
+      }
+
+      if (strip) strip.style.display = 'flex';
+
+      // Determine items needed to fill at least 1.5x screen width so infinite scroll is seamless
+      const thumbH = Math.max(60, window.innerHeight * 0.2 - 26);
+      const thumbW = thumbH * (1500 / 1167);
+      const itemFullW = thumbW + 16;
+      const minItems = Math.max(8, Math.ceil((window.innerWidth * 1.5) / itemFullW));
+
+      let repeated = [];
+      while (repeated.length < minItems) {
+        for (let i = 0; i < certificates.length; i++) {
+          repeated.push({ cert: certificates[i], origIndex: i });
+          if (repeated.length >= minItems && repeated.length % certificates.length === 0) break;
+        }
+      }
+
+      track1.innerHTML = '';
+      track2.innerHTML = '';
+
+      for (const item of repeated) {
+        const div = document.createElement('div');
+        div.className = 'ticker-item';
+        div.dataset.certIndex = item.origIndex;
+        div.title = item.cert.name ? `Dr. ${item.cert.name}` : 'Certificate';
+
+        const img = document.createElement('img');
+        img.alt = item.cert.name ? `Certificate for ${item.cert.name}` : 'Certificate';
+
+        // Set immediate thumbnail
+        const direct = extractDirectDriveImageUrl(item.cert.driveUrl || item.cert.localImagePath);
+        img.src = direct || item.cert.localImagePath || 'certificate.png';
+
+        // Load cached blob URL if available
+        getCachedImageUrl(item.cert.driveUrl || item.cert.localImagePath).then(url => {
+          if (url && url !== img.src) img.src = url;
+        });
+
+        img.onerror = () => {
+          const match = (item.cert.driveUrl || '').match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || (item.cert.driveUrl || '').match(/id=([a-zA-Z0-9_-]+)/);
+          if (match && match[1] && !img.dataset.triedFallback) {
+            img.dataset.triedFallback = '1';
+            img.src = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+          } else {
+            img.src = 'certificate.png';
+          }
+        };
+
+        div.appendChild(img);
+        track1.appendChild(div);
+      }
+
+      // Clone track1 items into track2 for seamless right-to-left infinite loop
+      track2.innerHTML = track1.innerHTML;
+
+      // Calculate smooth scrolling duration (~40 pixels per second)
+      const trackWidth = repeated.length * itemFullW;
+      const duration = Math.max(25, Math.round(trackWidth / 40));
+      wrapper.style.animationDuration = `${duration}s`;
     }
 
     /**
@@ -607,10 +909,43 @@
         }
       } catch (_) {}
 
-      // Initial render: if certificates exist, render them; otherwise stage stays clean
-      if (certificates.length > 0) {
-        renderSlides(false);
+      // Fallback preview certificate if completely empty so the screen is never blank
+      if (certificates.length === 0) {
+        certificates = [
+          { name: 'Dr. Participant', localImagePath: 'certificate.png', driveUrl: '' }
+        ];
+        isPreviewFallback = true;
       }
+
+      // Initial render of both center stage and bottom slideshow
+      renderSlides(false);
+      renderBottomSlideshow();
+
+      // Setup click listener on bottom slideshow to jump to clicked certificate
+      const tickerWrapper = document.getElementById('tickerWrapper');
+      if (tickerWrapper) {
+        tickerWrapper.addEventListener('click', (e) => {
+          const item = e.target.closest('.ticker-item');
+          if (item && item.dataset.certIndex !== undefined) {
+            const certIdx = parseInt(item.dataset.certIndex, 10);
+            if (certificates[certIdx] && displayList.length > 0) {
+              const target = certificates[certIdx];
+              const slideIdx = displayList.findIndex(c => c === target);
+              if (slideIdx !== -1) {
+                goToSlide(slideIdx, slideIdx >= currentIndex ? 'forward' : 'backward');
+                resetCarouselTimer();
+              }
+            }
+          }
+        });
+      }
+
+      // Re-render bottom strip on resize
+      let resizeStripTimer = null;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeStripTimer);
+        resizeStripTimer = setTimeout(renderBottomSlideshow, 200);
+      });
 
       // 3. Connect to local SSE for instant local notification
       connectLocalSSE();
@@ -643,6 +978,8 @@
         nextSlide();
       } else if (e.key === 'ArrowLeft') {
         prevSlide();
+      } else if (e.key === 's' || e.key === 'S') {
+        window.location.href = 'stand.html';
       }
     });
 
